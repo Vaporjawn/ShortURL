@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Disallow API endpoints from crawling
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://yoursite.com/sitemap.xml

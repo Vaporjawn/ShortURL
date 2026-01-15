@@ -1,10 +1,13 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
+import cors from 'cors';
 import { ShortUrl } from './models/shortUrl';
 import connectDB from './config/database';
 import { errorHandler, asyncHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
+import { rateLimiter, helmetConfig, corsOptions } from './config/security';
+import { validateUrl, sanitizeUrl } from './utils/urlValidator';
 
 // Load environment variables
 dotenv.config();
@@ -15,6 +18,10 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // Connect to database
 connectDB();
+
+// Security middleware (apply before routes)
+app.use(helmetConfig);
+app.use(cors(corsOptions));
 
 // Middleware
 app.set('view engine', 'ejs');
@@ -31,11 +38,13 @@ app.use((req: Request, _res: Response, next: () => void) => {
 
 // Routes
 app.get('/', asyncHandler(async (_req: Request, res: Response) => {
-  const shortUrls = await ShortUrl.find().sort({ createdAt: -1 });
+  // Limit to most recent 50 URLs for performance
+  const shortUrls = await ShortUrl.find().sort({ createdAt: -1 }).limit(50);
   res.render('index', { shortUrls, baseUrl: BASE_URL });
 }));
 
-app.post('/shortUrls', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+// Apply rate limiting to URL creation
+app.post('/shortUrls', rateLimiter, asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { fullUrl } = req.body;
 
   if (!fullUrl) {
@@ -43,28 +52,47 @@ app.post('/shortUrls', asyncHandler(async (req: Request, res: Response): Promise
     return;
   }
 
-  // Validate URL format
-  try {
-    new URL(fullUrl);
-  } catch {
-    res.status(400).json({ error: 'Invalid URL format' });
+  // Sanitize and validate URL
+  const sanitizedUrl = sanitizeUrl(fullUrl);
+  const validation = validateUrl(sanitizedUrl);
+
+  if (!validation.isValid) {
+    res.status(400).json({ error: validation.error });
     return;
   }
 
   // Check if URL already exists
-  let shortUrl = await ShortUrl.findOne({ full: fullUrl });
+  let shortUrl = await ShortUrl.findOne({ full: sanitizedUrl });
 
   if (!shortUrl) {
-    shortUrl = await ShortUrl.create({ full: fullUrl });
-    logger.info(`Created new short URL: ${shortUrl.short} -> ${fullUrl}`);
+    shortUrl = await ShortUrl.create({ full: sanitizedUrl });
+    logger.info(`Created new short URL: ${shortUrl.short} -> ${sanitizedUrl}`);
   }
 
   res.redirect('/');
 }));
 
-app.get('/api/urls', asyncHandler(async (_req: Request, res: Response) => {
-  const shortUrls = await ShortUrl.find().sort({ createdAt: -1 });
-  res.json(shortUrls);
+app.get('/api/urls', asyncHandler(async (req: Request, res: Response) => {
+  // Pagination support
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
+
+  const [shortUrls, total] = await Promise.all([
+    ShortUrl.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+    ShortUrl.countDocuments()
+  ]);
+
+  res.json({
+    urls: shortUrls,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: skip + shortUrls.length < total
+    }
+  });
 }));
 
 app.get('/api/stats/:shortUrl', asyncHandler(async (req: Request, res: Response): Promise<void> => {

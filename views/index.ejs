@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="description" content="ShortURL - Free, fast, and open-source URL shortener. Create short links in seconds.">
+  <meta name="keywords" content="url shortener, short link, free url shortener, link shortener">
   <title>ShortURL - URL Shortener</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -216,11 +219,19 @@
               class="form-control url-input"
               pattern="https?://.+"
               title="Please enter a valid URL starting with http:// or https://"
+              aria-label="Enter URL to shorten"
+              aria-describedby="urlHelp"
             >
+            <div id="urlHelp" class="form-text">URLs must start with http:// or https://</div>
+            <div id="urlError" class="invalid-feedback" style="display: none;"></div>
           </div>
           <div class="col-md-3 d-flex align-items-end">
-            <button class="btn shrink-btn w-100" type="submit">
-              <i class="fas fa-compress-alt"></i> Shrink
+            <button class="btn shrink-btn w-100" type="submit" id="submitBtn">
+              <span id="btnText"><i class="fas fa-compress-alt"></i> Shrink</span>
+              <span id="btnLoader" style="display: none;">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Shortening...
+              </span>
             </button>
           </div>
         </div>
@@ -284,21 +295,43 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // Copy to clipboard with improved feedback
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
         const btn = event.target.closest('button');
         const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
         btn.style.background = '#28a745';
 
         setTimeout(() => {
           btn.innerHTML = originalHTML;
           btn.style.background = '#28a745';
-        }, 2000);
+        }, 3000);
       }).catch(err => {
-        alert('Failed to copy: ' + err);
+        console.error('Copy failed:', err);
+        alert('Failed to copy to clipboard');
       });
     }
+
+    // Form submission with loading state
+    document.getElementById('urlForm').addEventListener('submit', function(e) {
+      const submitBtn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      const btnLoader = document.getElementById('btnLoader');
+
+      // Show loading state
+      btnText.style.display = 'none';
+      btnLoader.style.display = 'inline-block';
+      submitBtn.disabled = true;
+    });
+
+    // Keyboard shortcut: Ctrl/Cmd + K to focus URL input
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('fullUrl').focus();
+      }
+    });
   </script>
 </body>
 </html>

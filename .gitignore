@@ -40,3 +40,8 @@ pids
 *.pid
 *.seed
 *.pid.lock
+docs/Phase 1.md
+docs/Phase 2.md
+docs/Phase 3.md
+docs/Phase 4.md
+docs/Phase 5.md

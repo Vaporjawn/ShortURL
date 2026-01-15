@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import shortId from 'shortid';
+import { nanoid } from 'nanoid';
 
 export interface IShortUrl extends Document {
   full: string;
@@ -30,7 +30,7 @@ const shortUrlSchema = new Schema<IShortUrl>(
     short: {
       type: String,
       required: true,
-      default: shortId.generate,
+      default: () => nanoid(10),
       unique: true,
       index: true
     },

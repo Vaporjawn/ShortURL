@@ -11,15 +11,18 @@ A modern, free, fast, and open-source URL shortener built with TypeScript, Expre
 ## ✨ Features
 
 - 🚀 **Fast & Lightweight** - Built with performance in mind
-- 🔒 **URL Validation** - Ensures only valid URLs are shortened
+- 🔒 **Security First** - Rate limiting, CORS, Helmet security headers, and malicious URL detection
+- ✅ **Enhanced URL Validation** - Comprehensive validation with protocol checking and pattern detection
 - 📊 **Click Tracking** - Track how many times your short URLs are accessed
-- 🎨 **Modern UI** - Beautiful, responsive interface
-- 🔗 **Easy Sharing** - One-click copy to clipboard
+- 🎨 **Modern UI** - Beautiful, responsive interface with improved UX
+- 🔗 **Easy Sharing** - One-click copy to clipboard with visual feedback
 - 📱 **Mobile Friendly** - Works seamlessly on all devices
 - 🐳 **Docker Support** - Easy deployment with Docker Compose
 - 📝 **TypeScript** - Fully typed for better development experience
 - 🔄 **Real-time Updates** - See your URLs instantly after shortening
-- 🌐 **RESTful API** - Full API for programmatic access
+- 🌐 **RESTful API** - Full API with pagination support
+- ⚡ **Rate Limited** - Protection against abuse (10 requests/minute)
+- 🎯 **SEO Optimized** - Includes robots.txt, sitemap.xml, and meta tags
 
 ## 🚀 Quick Start
 
@@ -53,6 +56,7 @@ A modern, free, fast, and open-source URL shortener built with TypeScript, Expre
    NODE_ENV=development
    MONGODB_URI=mongodb://localhost:27017/urlShortener
    BASE_URL=http://localhost:5000
+   ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5000
    ```
 
 4. **Start MongoDB** (if running locally)
@@ -99,26 +103,35 @@ curl -X POST http://localhost:5000/shortUrls \
   -d "fullUrl=https://example.com/very/long/url"
 ```
 
-### Get All URLs
+### Get All URLs (with Pagination)
 
-**GET** `/api/urls`
+**GET** `/api/urls?page=1&limit=20`
 
 ```bash
-curl http://localhost:5000/api/urls
+curl http://localhost:5000/api/urls?page=1&limit=20
 ```
 
 Response:
 ```json
-[
-  {
-    "_id": "...",
-    "full": "https://example.com/very/long/url",
-    "short": "abc123",
-    "clicks": 42,
-    "createdAt": "2025-10-08T00:00:00.000Z",
-    "updatedAt": "2025-10-08T00:00:00.000Z"
+{
+  "urls": [
+    {
+      "_id": "...",
+      "full": "https://example.com/very/long/url",
+      "short": "abc123xyz",
+      "clicks": 42,
+      "createdAt": "2025-10-08T00:00:00.000Z",
+      "updatedAt": "2025-10-08T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "totalPages": 8,
+    "hasMore": true
   }
-]
+}
 ```
 
 ### Get URL Statistics
@@ -163,7 +176,8 @@ This will redirect to the original URL and increment the click counter.
 - **Backend**: Node.js, Express.js, TypeScript
 - **Database**: MongoDB with Mongoose ODM
 - **Frontend**: EJS templating, Bootstrap 5
-- **URL Generation**: ShortID
+- **Security**: Helmet, CORS, Express Rate Limit
+- **URL Generation**: Nanoid (secure, URL-friendly IDs)
 - **Development**: ts-node-dev, nodemon
 - **Code Quality**: ESLint, TypeScript strict mode
 
@@ -173,17 +187,23 @@ This will redirect to the original URL and increment the click counter.
 ShortURL/
 ├── src/
 │   ├── config/
-│   │   └── database.ts        # MongoDB connection
+│   │   ├── database.ts        # MongoDB connection
+│   │   └── security.ts        # Security middleware config
 │   ├── middleware/
 │   │   └── errorHandler.ts    # Error handling middleware
 │   ├── models/
 │   │   └── shortUrl.ts        # URL model and schema
 │   ├── utils/
-│   │   └── logger.ts          # Logging utility
+│   │   ├── logger.ts          # Logging utility
+│   │   └── urlValidator.ts    # URL validation and sanitization
 │   └── server.ts              # Main application entry
 ├── views/
 │   ├── index.ejs              # Home page
 │   └── 404.ejs                # 404 error page
+├── public/
+│   ├── favicon.svg            # Site favicon
+│   ├── robots.txt             # Search engine directives
+│   └── sitemap.xml            # Site structure for SEO
 ├── dist/                      # Compiled TypeScript output
 ├── .env.example               # Environment variables template
 ├── docker-compose.yml         # Docker configuration
@@ -234,19 +254,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Express.js](https://expressjs.com/) - Fast, unopinionated web framework
 - [MongoDB](https://www.mongodb.com/) - NoSQL database
 - [Bootstrap](https://getbootstrap.com/) - CSS framework
-- [ShortID](https://github.com/dylang/shortid) - Short ID generator
+- [Nanoid](https://github.com/ai/nanoid) - Secure, URL-friendly unique ID generator
+- [Helmet](https://helmetjs.github.io/) - Security middleware for Express
 
 ## 📊 Roadmap
 
+- [x] Enhanced URL validation with malicious pattern detection
+- [x] Rate limiting to prevent abuse
+- [x] Security headers with Helmet
+- [x] CORS support for API access
+- [x] API pagination
+- [x] Improved UX with loading states and keyboard shortcuts
 - [ ] User authentication and private URLs
 - [ ] Custom short URL aliases
 - [ ] QR code generation
-- [ ] Analytics dashboard
-- [ ] Rate limiting
+- [ ] Analytics dashboard with detailed statistics
 - [ ] URL expiration
 - [ ] API key authentication
 - [ ] Bulk URL shortening
 - [ ] URL preview before redirect
+- [ ] Custom domains support
 
 ## 🐛 Known Issues
 
